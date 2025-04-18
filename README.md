@@ -14,17 +14,18 @@ Este projeto é uma implementação de uma API RESTFUL
 - **Alembic migrations**
 - **python-jose JWT (JSON WEB TOKEN)**
 - **passlib cript passwords**
+- **Pydantic forma de validar formulario request**
 
 <!-- Dividindo a tarefas em topicos -->
 <!-- [] Criar estrutura base
-    [] Adicionar todas as rotas
+    [] Adicionar todas as rotas e criar os modelos
     [] Adicionar testes a cada rota utilizando Pytest
-    [] Adicionar acesso ao banco de dados e criação de instancias
-    [] Adicionar autenticação de usuário
+    [x] Adicionar acesso ao banco de dados
+    [x] Adicionar autenticação de usuário
     [] Adicionar validação e tratamento de erros nas rotas
     [] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
     [] Criar documentação da API
-    [] Dockerizar a aplicação
+    [x] Dockerizar a aplicação
     [] Deploy da aplicação no Render
 
 [] Adições possiveis ao projeto

@@ -12,4 +12,4 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Token inválido ou expirado.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return payload  # ou algo como `payload["sub"]`
+    return payload  

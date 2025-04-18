@@ -1,61 +1,29 @@
-from fastapi import FastAPI, APIRouter, Depends, status, Form, HTTPException
-from .models import SystemUser
-from sqlalchemy.orm import Session
-from .database import get_db
-from .auth.dependencies import get_current_user
-from .auth.auth import create_access_token
-from fastapi.security import OAuth2PasswordRequestForm
-from .utils.security import verify_password
+from fastapi import FastAPI, Request
+from api_restful.routes import auth
+from api_restful.routes import clients
 
-router = APIRouter()
-
-@router.post("/auth/login")
-def auth_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
-    db: Session = Depends(get_db), 
-    status_code=status.HTTP_200_OK
-):
-    db_user = SystemUser.get_user_by_username(db,form_data.username)
-
-    if not db_user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-    if not verify_password(form_data.password, db_user.password):
-        raise HTTPException(status_code=404, detail="Senha incorreta")
-    
-    access_token = create_access_token(data={"sub": form_data.username})
-    return {"access_token": access_token, "token_type": "bearer"}
-
-    
-
-@router.post("/auth/register")
-def auth_register(
-    username: str = Form(...), 
-    password: str = Form(...), 
-    db: Session = Depends(get_db), 
-    status_code=status.HTTP_201_CREATED
-):
-    system_user = SystemUser.create_user(db=db, username=username, password=password)
-    return {"message": "Usuario criado com sucesso", "system_user_id": system_user.id}
-
-@router.post("/auth/refresh-token")
-def auth_refresh_token(
-    username: str = Form(...), 
-    db: Session = Depends(get_db), 
-    status_code=status.HTTP_201_CREATED
-):
-    user = SystemUser.get_user_by_username(db, username)
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    access_token = create_access_token(data={"sub": user.username})
-    
-    return {"message": "Token gerado com sucesso", "access_token": access_token}
-
-# @router.get("/test")
-# def protected_route(user: dict = Depends(get_current_user)):
-#     return {"message": "Você está autenticado!", "user": user}
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
-app.include_router(router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(clients.router, prefix="/api/v1")
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for err in exc.errors():
+        field = err['loc'][-1]
+        errors.append({
+            "field": field,
+            "error": err["msg"]
+        })
+    
+    return JSONResponse(
+        status_code=422,
+        content=jsonable_encoder({
+            "message": "Erro de validação nos campos enviados",
+            "errors": errors
+        }),
+    )
