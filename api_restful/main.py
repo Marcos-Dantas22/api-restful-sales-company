@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from api_restful.routes import auth
 from api_restful.routes import clients
+from api_restful.routes import products
 
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -9,6 +10,7 @@ from fastapi.encoders import jsonable_encoder
 app = FastAPI()
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
+app.include_router(products.router, prefix="/api/v1")
 
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
