@@ -18,13 +18,15 @@ Este projeto é uma implementação de uma API RESTFUL
 
 <!-- Dividindo a tarefas em topicos -->
 <!-- [] Criar estrutura base
-    [] Adicionar todas as rotas e criar os modelos
-    [] Adicionar testes a cada rota utilizando Pytest
+    [x] Adicionar todas as rotas e criar os modelos
     [x] Adicionar acesso ao banco de dados
     [x] Adicionar autenticação de usuário
-    [] Adicionar validação e tratamento de erros nas rotas
-    [] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
+    [x] Proteger todas as rotas de clientes, produtos e pedidos
+    [] Implementar niveis de acesso para admin e usuario regular.
     [] Criar documentação da API
+    [] Adicionar validação e tratamento de erros nas rotas
+    [] Adicionar testes a cada rota utilizando Pytest
+    [] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
     [x] Dockerizar a aplicação
     [] Deploy da aplicação no Render
 

@@ -2,17 +2,22 @@ from .utils.security import hash_password
 from sqlalchemy import (
     Column, Integer, String, 
     Date, DateTime, Boolean, 
-    ForeignKey, Numeric, Text
+    ForeignKey, Numeric, Text, Table, Enum
 )
+from api_restful.utils.enums import GenderStatus, OrderStatus
 from api_restful.schemas.clients import ClientCreate
 from api_restful.schemas.products import ProductsCreate
+from api_restful.schemas.orders import OrdersCreate, OrdersUpdate
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from unidecode import unidecode
 from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
 from .database import Base
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
+from typing import List
+
 Base = declarative_base()
 
 class BaseModel(Base):
@@ -48,13 +53,15 @@ class Clients(BaseModel):
     user = relationship("SystemUser", backref="clients")
     full_name = Column(String, nullable=False)
     cpf = Column(String(14), unique=True, nullable=False)
-    gender = Column(String(1)) # F or M
+    gender = Column(Enum(GenderStatus, name="genderstatus"))
     email = Column(String, unique=True, nullable=False)
     phone = Column(String, nullable=True)
     birth_date = Column(Date)
     address = Column(String)
     city = Column(String)
     state = Column(String)
+
+    orders = relationship("Orders", back_populates="client")
 
     @staticmethod
     def create(
@@ -268,3 +275,159 @@ class Images(BaseModel):
     base64 = Column(Text, nullable=False)  
 
     product = relationship("Products", back_populates="images")
+
+
+# Tabela associativa    
+order_products = Table(
+    'order_products',
+    Base.metadata,
+    Column('order_id', Integer, ForeignKey('orders.id', ondelete="CASCADE"), primary_key=True),
+    Column('product_id', Integer, ForeignKey('products.id', ondelete="CASCADE"), primary_key=True),
+    Column('product_quantity', Integer, nullable=False)
+)
+class Orders(BaseModel):
+    __tablename__ = 'orders'
+
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    client = relationship("Clients", back_populates="orders")
+
+    products = relationship("Products", secondary=order_products, backref="orders")
+    status = Column(Enum(OrderStatus), default=OrderStatus.created)
+
+    @staticmethod
+    def create(db: Session, order: OrdersCreate):
+        # Cria o pedido
+        new_order = Orders(client_id=order.client_id)
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
+
+        for item in order.products:
+            product_id = item.product_id
+            quantity = item.quantity
+
+            product = db.query(Products).filter_by(id=product_id).first()
+            if not product:
+                raise ValueError(f"Produto com ID {product_id} não encontrado.")
+
+            if product.initial_stock < quantity:
+                raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {quantity}, disponível: {product.stock}.")
+
+            # Adiciona na tabela associativa com quantity
+            insert_stmt = order_products.insert().values(
+                order_id=new_order.id,
+                product_id=product.id,
+                product_quantity=quantity
+            )
+            db.execute(insert_stmt)
+
+            # Subtrai do estoque
+            product.initial_stock -= quantity
+
+        db.commit()
+        db.refresh(new_order)
+
+        return new_order
+    
+    @staticmethod
+    def get_orders(
+        db: Session, 
+        start_date: str, 
+        end_date: str, 
+        section: str,
+        order_id: int,
+        status: str,
+        client_id: int,
+    ):
+        conditions = []
+
+        if start_date:
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+            conditions.append(Orders.created_at >= start)
+
+        if end_date:
+            end = datetime.strptime(end_date, "%Y-%m-%d")
+            conditions.append(Orders.created_at <= end)
+
+        if section:
+            normalized_section = unidecode(section.lower())
+            conditions.append(
+                Products.section.ilike(f"%{normalized_section}%")
+            )
+
+        if order_id is not None:
+            conditions.append(Orders.id == order_id)
+
+        if client_id is not None:
+            conditions.append(Orders.client_id == client_id)
+
+        if status is not None:
+            conditions.append(Orders.status == status)
+
+        query = (
+            db.query(Orders)
+            .join(Orders.products)  
+            .filter(and_(*conditions))
+            .options(joinedload(Orders.products))  
+        )
+        return query
+    
+    @staticmethod
+    def get_order(db: Session, id: int):
+        return db.query(Orders).filter(Orders.id == id).first()
+
+    
+    @staticmethod
+    def update(db: Session, order_id: int, update_data: OrdersUpdate):
+        order = db.query(Orders).filter_by(id=order_id).first()
+
+        # Atualiza o status, se fornecido
+        if update_data.status:
+            order.status = update_data.status
+
+        if update_data.products:
+            for item in update_data.products:
+                product = db.query(Products).filter_by(id=item.product_id).first()
+                if not product:
+                    raise ValueError(f"Produto com ID {item.product_id} não encontrado.")
+
+                # Verifica se o produto já está no pedido
+                existing_order_product = db.query(order_products).filter_by(
+                    order_id=order.id, product_id=item.product_id).first()
+
+                if existing_order_product:
+                    # Verifica se a quantidade a ser atualizada é diferente
+                    if existing_order_product.product_quantity != item.quantity:
+                        if item.quantity > product.initial_stock:
+                            raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {item.quantity}, disponível: {product.initial_stock}.")
+                        # Atualiza a quantidade se for diferente
+                        db.execute(
+                            order_products.update().where(
+                                order_products.c.order_id == order.id,
+                                order_products.c.product_id == item.product_id
+                            ).values(product_quantity=item.quantity)
+                        )
+                else:
+                    # Se o produto não existir no pedido, adiciona como novo
+                    if item.quantity > product.initial_stock:
+                        raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {item.quantity}, disponível: {product.initial_stock}.")
+                    db.execute(
+                        order_products.insert().values(
+                            order_id=order.id,
+                            product_id=item.product_id,
+                            product_quantity=item.quantity
+                        )
+                    )
+
+        db.commit()
+        db.refresh(order)
+        return order
+    
+    @staticmethod
+    def delete(db: Session, id: int):
+        order_to_delete = db.query(Orders).filter(Orders.id == id).first()
+
+        db.delete(order_to_delete)
+        db.commit()
+
+        return order_to_delete
