@@ -22,16 +22,15 @@ Este projeto é uma implementação de uma API RESTFUL
     [x] Adicionar acesso ao banco de dados
     [x] Adicionar autenticação de usuário
     [x] Proteger todas as rotas de clientes, produtos e pedidos
-    [] Implementar niveis de acesso para admin e usuario regular.
-    [] Criar documentação da API
-    [] Adicionar validação e tratamento de erros nas rotas
+    [x] Criar documentação da API
+    [x] Adicionar validação e tratamento de erros nas rotas
+    [x] Dockerizar a aplicação
+    [] Implementar niveis de acesso para admin e usuario regular.(deletar system_user, alterar_systemuser, criar_user_admin)
     [] Adicionar testes a cada rota utilizando Pytest
     [] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
-    [x] Dockerizar a aplicação
     [] Deploy da aplicação no Render
 
 [] Adições possiveis ao projeto
-    [] Métricas expostas com Prometheus + visualização no Grafana
     [] CI com GitHub Actions para rodar testes automaticamente
-    [] Integração com um serviço de e-mail (Mailgun, SendGrid)
-    [] Painel administrativo simples com FastAPI-admin ou Tortoise-Admin -->
+    [] Adicionar IA-->
+    

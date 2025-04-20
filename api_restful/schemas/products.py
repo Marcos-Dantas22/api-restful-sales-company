@@ -18,12 +18,15 @@ class ProductsBase(BaseModel):
 class ProductsCreate(ProductsBase):
     pass
 
-# class CreateProductResponse(BaseModel):
-#     message: str
-#     product: ProductsResponse
 
-class ProductsResponse(ProductsBase):
+class ProductsResponse(BaseModel):
     id: int
+    description: str
+    price: float
+    barcode: str
+    section: str
+    initial_stock: int
+    expiration_date: Optional[date] = None
 
     images: List[Images] = [] 
     

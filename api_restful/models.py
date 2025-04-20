@@ -5,12 +5,13 @@ from sqlalchemy import (
     ForeignKey, Numeric, Text, Table, Enum
 )
 from api_restful.utils.enums import GenderStatus, OrderStatus
-from api_restful.schemas.clients import ClientCreate
+from api_restful.schemas.clients import ClientCreate, ClientResponse
 from api_restful.schemas.products import ProductsCreate
 from api_restful.schemas.orders import OrdersCreate, OrdersUpdate
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from unidecode import unidecode
+from sqlalchemy import func
 from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -29,7 +30,7 @@ class BaseModel(Base):
 
 class SystemUser(BaseModel):
     __tablename__ = "system_users"    
-    username = Column(String)
+    username = Column(String, unique=True)
     password = Column(String)
     is_admin = Column(Boolean, default=False)
 
@@ -93,11 +94,12 @@ class Clients(BaseModel):
 
         if full_name:
             normalized_full_name = unidecode(full_name.lower())
-            conditions.append(Clients.section.ilike(f"%{normalized_full_name}%"))
+            conditions.append(Clients.full_name.ilike(f"%{normalized_full_name}%"))
+
         
         if email:
             normalized_email = unidecode(email.lower())
-            conditions.append(Clients.section.ilike(f"%{normalized_email}%"))
+            conditions.append(Clients.email.ilike(f"%{normalized_email}%"))
 
 
         query = db.query(Clients).filter(and_(*conditions))  

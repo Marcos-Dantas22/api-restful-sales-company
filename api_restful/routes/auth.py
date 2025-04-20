@@ -1,54 +1,112 @@
-from fastapi import APIRouter, Depends, status, Form, HTTPException
+from fastapi import APIRouter, Depends, status, Form, HTTPException, Body
 from api_restful.models import SystemUser
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
-from api_restful.auth.dependencies import get_current_user
-from api_restful.auth.auth import create_access_token
-from fastapi.security import OAuth2PasswordRequestForm
+from api_restful.auth.auth import create_access_token, decode_token, create_refresh_token
+from fastapi.responses import JSONResponse
 from api_restful.utils.security import verify_password
+from api_restful.docs.auth_docs import (
+    login_description,
+    login_responses,
+    register_description,
+    register_responses,
+    refresh_token_description,
+    refresh_token_responses
+)
+from api_restful.schemas.auth import (
+    TokenResponse, LoginRequest, 
+    RegisterResponse, RegisterCreate,
+    RefreshTokenRequest, RefreshTokenResponse
+)
+from jose import JWTError
 
 router = APIRouter()
 
-@router.post("/auth/login")
+@router.post(
+    "/auth/login", 
+    summary="Login de usuário",
+    response_model=TokenResponse,
+    description=login_description,
+    status_code=status.HTTP_200_OK,
+    responses=login_responses,
+    tags=["Autenticação"]
+)
 def auth_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
+    credentials: LoginRequest = Body(...),
     db: Session = Depends(get_db), 
-    status_code=status.HTTP_200_OK
 ):
-    db_user = SystemUser.get_user_by_username(db,form_data.username)
+    db_user = SystemUser.get_user_by_username(db,credentials.username)
 
     if not db_user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        return JSONResponse(
+            status_code=404,
+            content={"message": "Usuário não encontrado"}
+        )
 
-    if not verify_password(form_data.password, db_user.password):
-        raise HTTPException(status_code=404, detail="Senha incorreta")
+    if not verify_password(credentials.password, db_user.password):
+        return JSONResponse(
+            status_code=404,
+            content={"message": "Senha incorreta"}
+        )
     
-    access_token = create_access_token(data={"sub": form_data.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    access_token = create_access_token(data={"sub": credentials.username})
+    refresh_token = create_refresh_token(data={"sub": credentials.username})
 
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
     
 
-@router.post("/auth/register")
+@router.post(
+    "/auth/register", 
+    summary="Registro de usuário",
+    response_model=RegisterResponse,
+    description=register_description,
+    status_code=status.HTTP_200_OK,
+    responses=register_responses,
+    tags=["Autenticação"]
+)
 def auth_register(
-    username: str = Form(...), 
-    password: str = Form(...), 
+    register: RegisterCreate = Body(...),
     db: Session = Depends(get_db), 
-    status_code=status.HTTP_201_CREATED
 ):
-    system_user = SystemUser.create(db=db, username=username, password=password)
+    db_user = db.query(SystemUser).filter(SystemUser.username == register.username).first()
+    
+    if db_user:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Username já cadastrado"}
+        )
+
+    system_user = SystemUser.create(db=db, username=register.username, password=register.password)
     return {"message": "Usuario criado com sucesso", "system_user_id": system_user.id}
 
-@router.post("/auth/refresh-token")
-def auth_refresh_token(
-    username: str = Form(...), 
-    db: Session = Depends(get_db), 
-    status_code=status.HTTP_201_CREATED
-):
-    user = SystemUser.get_user_by_username(db, username)
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
-    access_token = create_access_token(data={"sub": user.username})
-    
-    return {"message": "Token gerado com sucesso", "access_token": access_token}
+@router.post(
+    "/auth/refresh-token" , 
+    summary="Gerar novo token de acesso",
+    description=refresh_token_description,
+    responses=refresh_token_responses,
+    response_model=RefreshTokenResponse,
+    tags=["Autenticação"]
+)
+def auth_refresh_access_token(payload: RefreshTokenRequest):
+    try:
+        payload_data = decode_token(payload.refresh_token)
+        username = payload_data.get("sub")
+        if not username:
+            return JSONResponse(
+                status_code=401,
+                content={"message": "Token inválido"}
+            )
+            
+
+        new_token = create_access_token(data={"sub": username})
+        return {
+            "message": "Novo token gerado com sucesso",
+            "access_token": new_token
+        }
+
+    except JWTError:
+        return JSONResponse(
+            status_code=401,
+            content={"message": "Refresh token inválido ou expirado"}
+        )

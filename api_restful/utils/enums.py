@@ -7,6 +7,6 @@ class OrderStatus(enum.Enum):
     canceled = "canceled"       # Se o pedido for cancelado
 
 class GenderStatus(enum.Enum):
-    female = 0
-    male = 1
-    other = 2    
+    female = "female" # Feminino
+    male = "male" # Masculino
+    other = "other" # Outro    
