@@ -39,6 +39,23 @@ def get_products(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
+    # Validação de preços negativos
+    if price_min is not None and price_min < 0:
+        raise HTTPException(
+            status_code=400, detail="price_min não pode ser negativo"
+        )
+
+    if price_max is not None and price_max < 0:
+        raise HTTPException(
+            status_code=400, detail="price_max não pode ser negativo"
+        )
+
+    # Validação de disponibilidade
+    if availability is not None and (availability != 0 and availability != 1):
+        raise HTTPException(
+            status_code=400,
+            detail="availability deve ser 0 ou 1"
+        )
     
     if price and (price_min or price_max):
         raise HTTPException(status_code=400, detail="Não é permitido usar o filtro 'price' junto com 'price_min' ou 'price_max'. Escolha apenas um conjunto de filtros de preço.")

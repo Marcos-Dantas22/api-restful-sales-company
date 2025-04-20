@@ -86,5 +86,7 @@ def traduction(msg: str) -> str:
         "Ensure this value has at least 1 characters": "O valor deve ter pelo menos 1 caractere",
         "Input should be 'female', 'male' or 'other'": "O valor deve ser 'female, 'male' ou 'other'",
         "value is not a valid email address: An email address must have an @-sign.": "O valor deve ser um e-mail válido",
+        "Input should be a valid number, unable to parse string as a number": "O valor deve ser um número válido",
+        "Input should be a valid integer, unable to parse string as an integer": "O valor deve ser um número inteiro válido",
     }
     return traducoes.get(msg, msg)  

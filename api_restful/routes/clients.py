@@ -18,6 +18,7 @@ from api_restful.docs.clients_docs import (
     delete_client_description,
     delete_client_responses
 )
+import re
 router = APIRouter()
 
 @router.get(
@@ -37,6 +38,12 @@ def get_clients(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
+    if email is not None:
+        if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
+            raise HTTPException(
+                status_code=400, detail="O campo email deve conter um e-mail válido"
+            )
+    
     query = Clients.get_clients(db, full_name, email)
 
     clients = query.offset(skip).limit(limit).all()

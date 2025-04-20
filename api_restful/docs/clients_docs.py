@@ -57,6 +57,14 @@ get_clients_responses = {
             }
         }
     },
+    400: {
+        "description": "Formato invalido do email.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "O campo email deve conter um e-mail válido"}
+            }
+        }
+    },
     401: {
         "description": "Usuário não autenticado.",
         "content": {
@@ -378,6 +386,7 @@ delete_client_responses = {
             }
         }
     },
+   
     401: {
         "description": "Usuário não autenticado.",
         "content": {

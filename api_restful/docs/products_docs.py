@@ -9,6 +9,7 @@ Este endpoint retorna uma lista de produtos, podendo ser filtrados por categoria
 - Apenas usuários autenticados podem acessar esta rota.
 - Não é permitido utilizar `price` junto com `price_min` ou `price_max` ao mesmo tempo.
 - Os resultados são paginados usando os parâmetros `skip` e `limit`.
+- O campo availability pode ser 0, para os produtos disponiveis e 1 para os não disponiveis.
 """
 
 get_products_response_example = [
@@ -42,7 +43,30 @@ get_products_responses = {
         "content": {
             "application/json": {
                 "example": {
-                    "detail": "Não é permitido usar o filtro 'price' junto com 'price_min' ou 'price_max'. Escolha apenas um conjunto de filtros de preço."
+                    "PriceMinFormatoInvalido": {
+                        "summary": "Formato inválido em price_min",
+                        "value": {
+                            "detail": "price_min não pode ser negativo"
+                        },
+                    },
+                    "PriceMaxFormatoInvalido": {
+                        "summary": "Formato inválido em price_max",
+                        "value": {
+                            "detail": "price_max não pode ser negativo"
+                        },
+                    },
+                    "AvabilityFormatoInvalido": {
+                        "summary": "Formato inválido em availability",
+                        "value": {
+                            "detail": "availability deve ser 0 ou 1"
+                        },
+                    },
+                    "FiltersFormatoInvalido": {
+                        "summary": "Não permitido multiplos filtros de preço",
+                        "value": {
+                            "detail": "Não é permitido usar o filtro 'price' junto com 'price_min' ou 'price_max'. Escolha apenas um conjunto de filtros de preço."
+                        },
+                    },
                 }
             }
         }
