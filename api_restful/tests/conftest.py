@@ -14,12 +14,12 @@ from api_restful.auth.auth import create_access_token
 load_dotenv()
 
 # Usar a variável de ambiente DATABASE_URL, se estiver configurada
-TEST_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+TEST_DATABASE_URL = "sqlite:///:memory:"
 
 # Criar o engine com a URL configurada
 engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False} if TEST_DATABASE_URL.startswith("sqlite") else {}
+    connect_args={"check_same_thread": False}
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
