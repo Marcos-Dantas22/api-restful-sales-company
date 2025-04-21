@@ -106,6 +106,7 @@ Este endpoint cria um novo produto no sistema.
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - O código de barras (barcode) deve ser único, caso contrário, a criação será rejeitada.
 - O produto criado retorna uma mensagem de sucesso com os dados do produto.
 
@@ -159,6 +160,14 @@ create_product_responses = {
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },
@@ -359,6 +368,7 @@ Este endpoint permite deletar um produto específico com base no seu ID.
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - O produto deve existir no sistema para ser deletado.
 
 Após a exclusão, o produto é removido permanentemente do sistema e não pode ser recuperado.
@@ -387,6 +397,22 @@ delete_product_responses = {
             }
         }
     },
+    401: {
+        "description": "Usuário não autenticado.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
+            }
+        }
+    },
     404: {
         "description": "Produto não encontrado.",
         "content": {
@@ -395,11 +421,95 @@ delete_product_responses = {
             }
         }
     },
+    422: {
+        "description": "Erro de validação nos campos enviados.",
+        "content": {
+            "application/json": {
+                "example": {
+                    "message": "Erro de validação nos campos enviados",
+                    "errors": [
+                        {
+                            "field": "campo",
+                            "error": "mensagem de erro"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
+
+# GET PRODUCT HISTORY DOCS
+
+get_product_history_description = """
+### 📚 Histórico de Produto
+
+Este endpoint retorna todos os registros de alterações feitas em um produto específico com base no seu ID.
+
+**Informações retornadas por item:**
+- `id`: Identificador único do histórico
+- `product_id`: ID do produto (pode ser `null` se o produto foi deletado)
+- `user_id`: ID do usuário que realizou a ação
+- `action`: Tipo da ação (`update` ou `delete`)
+- `changed_fields`: Dicionário com os campos alterados e seus valores antigos e novos
+- `timestamp`: Data e hora da alteração
+
+**Regras de negócio:**
+- Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
+- O produto deve existir no sistema para que haja histórico.
+"""
+
+get_product_history_responses = {
+    200: {
+        "description": "Histórico retornado com sucesso.",
+        "content": {
+            "application/json": {
+                "example": [
+                    {
+                        "id": 1,
+                        "product_id": 42,
+                        "user_id": 3,
+                        "action": "update",
+                        "changed_fields": {
+                            "price": {"old_value": 12.33, "new_value": 13.50},
+                            "description": {"old_value": "Lasanha", "new_value": "Lasanha Vegana"}
+                        },
+                        "timestamp": "2025-04-21T12:34:56.789000"
+                    },
+                    {
+                        "id": 2,
+                        "product_id": None,
+                        "user_id": 3,
+                        "action": "delete",
+                        "changed_fields": {
+                            "id": 42,
+                            "description": "Lasanha Vegana",
+                            "price": 13.50,
+                            "barcode": "777777777",
+                            "section": "Congelados",
+                            "initial_stock": 50,
+                            "expiration_date": "2025-04-21"
+                        },
+                        "timestamp": "2025-04-21T12:40:00.123000"
+                    }
+                ]
+            }
+        }
+    },
     401: {
         "description": "Usuário não autenticado.",
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },

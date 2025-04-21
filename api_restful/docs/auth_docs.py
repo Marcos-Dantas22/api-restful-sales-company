@@ -38,11 +38,11 @@ login_responses = {
                 "examples": {
                     "usuario_nao_encontrado": {
                         "summary": "Usuário não encontrado",
-                        "value": {"message": "Usuário não encontrado"}
+                        "value": {"detail": "Usuário não encontrado"}
                     },
                     "senha_incorreta": {
                         "summary": "Senha incorreta",
-                        "value": {"message": "Senha incorreta"}
+                        "value": {"detail": "Senha incorreta"}
                     }
                 }
             }
@@ -67,7 +67,7 @@ login_responses = {
     
 }
 
-# REGISTER DOCS
+# REGISTER USER DOCS
 
 register_description = """
 ### 🧾 Registro de novo usuário
@@ -103,7 +103,7 @@ register_responses = {
         "description": "Username já cadastrado.",
         "content": {
             "application/json": {
-                "example": {"message": "Username já cadastrado"}
+                "example": {"detail": "Username já cadastrado"}
             }
         },
     },
@@ -161,7 +161,7 @@ refresh_token_responses = {
         "description": "Token inválido ou expirado.",
         "content": {
             "application/json": {
-                "example": {"message": "Refresh token inválido ou expirado"}
+                "example": {"detail": "Refresh token inválido ou expirado"}
             }
         },
     },
@@ -175,6 +175,76 @@ refresh_token_responses = {
                         {
                             "field": "campo",
                             "error": "mensagem de erro"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
+
+# REGISTER USER ADMIN DOCS
+
+register_admin_description = """
+### 👑 Registrar Usuário Admin
+
+Este endpoint permite que um **usuário autenticado com permissão de administrador** registre um novo usuário administrador no sistema.
+
+**Regras de acesso:**
+- Apenas administradores autenticados (`is_admin: true`) podem acessar esta rota.
+- O `username` informado não pode estar cadastrado previamente.
+
+**Campos obrigatórios:**
+- `username`: Nome de usuário único
+- `password`: Senha do novo administrador
+"""
+
+register_admin_responses = {
+    200: {
+        "description": "Usuário administrador criado com sucesso.",
+        "content": {
+            "application/json": {
+                "example": {
+                    "message": "Usuario Admin criado com sucesso",
+                    "system_user_id": 42
+                }
+            }
+        }
+    },
+    400: {
+        "description": "Username já cadastrado.",
+        "content": {
+            "application/json": {
+                "example": {
+                    "detail": "Username já cadastrado"
+                }
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Usuário não é administrador.",
+        "content": {
+            "application/json": {
+                "example": {
+                    "detail": "Acesso permitido apenas para administradores."
+                }
+            }
+        }
+    },
+    422: {
+        "description": "Erro de validação nos dados enviados.",
+        "content": {
+            "application/json": {
+                "example": {
+                    "message": "Erro de validação nos campos enviados",
+                    "errors": [
+                        {
+                            "field": "username",
+                            "error": "campo obrigatório"
+                        },
+                        {
+                            "field": "password",
+                            "error": "campo obrigatório"
                         }
                     ]
                 }

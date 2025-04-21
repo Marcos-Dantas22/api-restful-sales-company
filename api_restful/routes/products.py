@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, status, Query, HTTPException
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
-from api_restful.auth.dependencies import get_current_user
+from api_restful.auth.dependencies import get_current_user, admin_required
 from api_restful.models import Products, SystemUser, ProductHistory
-from api_restful.schemas.products import ProductsCreate, ProductsResponse
+from api_restful.schemas.products import ProductsCreate, ProductsResponse, ProductHistoryResponse
 from api_restful.docs.products_docs import (
     get_products_description,
     get_products_responses,
@@ -15,7 +15,9 @@ from api_restful.docs.products_docs import (
     update_product_description,
     update_product_responses,
     delete_product_description,
-    delete_product_responses
+    delete_product_responses,
+    get_product_history_description,
+    get_product_history_responses
 )
 router = APIRouter()
 
@@ -85,7 +87,7 @@ def get_products(
 def create_products(
     product: ProductsCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)  
+    user: dict = Depends(admin_required)  
 ):
     
     existing_barcode = db.query(Products).filter(Products.barcode == product.barcode).first()
@@ -173,7 +175,7 @@ def update_product(
 def delete_product(
     id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)  
+    user: dict = Depends(admin_required)  
 ):
     product_to_delete = db.query(Products).filter(Products.id == id).first()
 
@@ -192,12 +194,13 @@ def delete_product(
 
 @router.get(
     "/products/{product_id}/history",
-    status_code=status.HTTP_200_OK,
     summary="Historico de produto",
-    # description=delete_product_description,
-    # responses=delete_product_responses,
+    status_code=status.HTTP_200_OK,
+    description=get_product_history_description,
+    response_model=List[ProductHistoryResponse],
+    responses=get_product_history_responses,
     tags=["Produtos"],
 )
-def get_product_history(product_id: int, db: Session = Depends(get_db)):
+def get_product_history(product_id: int, db: Session = Depends(get_db), user: dict = Depends(admin_required)):
     history = db.query(ProductHistory).filter(ProductHistory.product_id == product_id).all()
     return history

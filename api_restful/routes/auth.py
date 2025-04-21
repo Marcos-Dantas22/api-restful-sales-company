@@ -3,7 +3,6 @@ from api_restful.models import SystemUser
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
 from api_restful.auth.auth import create_access_token, decode_token, create_refresh_token
-from fastapi.responses import JSONResponse
 from api_restful.utils.security import verify_password
 from api_restful.docs.auth_docs import (
     login_description,
@@ -11,7 +10,9 @@ from api_restful.docs.auth_docs import (
     register_description,
     register_responses,
     refresh_token_description,
-    refresh_token_responses
+    refresh_token_responses,
+    register_admin_description,
+    register_admin_responses,
 )
 from api_restful.schemas.auth import (
     TokenResponse, LoginRequest, 
@@ -19,6 +20,7 @@ from api_restful.schemas.auth import (
     RefreshTokenRequest, RefreshTokenResponse
 )
 from jose import JWTError
+from api_restful.auth.dependencies import admin_required
 
 router = APIRouter()
 
@@ -38,15 +40,13 @@ def auth_login(
     db_user = SystemUser.get_user_by_username(db,credentials.username)
 
     if not db_user:
-        return JSONResponse(
-            status_code=404,
-            content={"message": "Usuário não encontrado"}
+        raise HTTPException(
+            status_code=404, detail="Usuário não encontrado"
         )
 
     if not verify_password(credentials.password, db_user.password):
-        return JSONResponse(
-            status_code=404,
-            content={"message": "Senha incorreta"}
+        raise HTTPException(
+            status_code=404, detail="Senha incorreta"
         )
     
     
@@ -72,9 +72,8 @@ def auth_register(
     db_user = db.query(SystemUser).filter(SystemUser.username == register.username).first()
     
     if db_user:
-        return JSONResponse(
-            status_code=400,
-            content={"message": "Username já cadastrado"}
+        raise HTTPException(
+            status_code=400, detail="Username já cadastrado"
         )
 
     system_user = SystemUser.create(db=db, username=register.username, password=register.password)
@@ -93,9 +92,8 @@ def auth_refresh_access_token(payload: RefreshTokenRequest):
         payload_data = decode_token(payload.refresh_token)
         username = payload_data.get("sub")
         if not username:
-            return JSONResponse(
-                status_code=401,
-                content={"message": "Token inválido"}
+            raise HTTPException(
+                status_code=401, detail="Token inválido"
             )
             
 
@@ -106,7 +104,31 @@ def auth_refresh_access_token(payload: RefreshTokenRequest):
         }
 
     except JWTError:
-        return JSONResponse(
-            status_code=401,
-            content={"message": "Refresh token inválido ou expirado"}
+        raise HTTPException(
+            status_code=401, detail="Refresh token inválido ou expirado"
         )
+    
+
+@router.post(
+    "/auth/register-admin", 
+    summary="Registro de usuário admin",
+    response_model=RegisterResponse,
+    description=register_admin_description,
+    status_code=status.HTTP_200_OK,
+    responses=register_admin_responses,
+    tags=["Autenticação"]
+)
+def auth_register_admin(
+    register: RegisterCreate = Body(...),
+    db: Session = Depends(get_db), 
+    user: dict = Depends(admin_required),  
+):
+    db_user = db.query(SystemUser).filter(SystemUser.username == register.username).first()
+    
+    if db_user:
+        raise HTTPException(
+            status_code=400, detail="Username já cadastrado"
+        )
+
+    system_user = SystemUser.create_admin(db=db, username=register.username, password=register.password)
+    return {"message": "Usuario Admin criado com sucesso", "system_user_id": system_user.id}

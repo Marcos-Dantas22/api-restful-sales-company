@@ -3,7 +3,7 @@ from api_restful.models import SystemUser
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
-from api_restful.auth.dependencies import get_current_user
+from api_restful.auth.dependencies import get_current_user, admin_required
 from api_restful.models import Clients
 from api_restful.schemas.clients import ClientCreate, ClientResponse
 from api_restful.docs.clients_docs import (
@@ -36,7 +36,7 @@ def get_clients(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1),
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(admin_required),  
 ):
     if email is not None:
         if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
@@ -93,7 +93,7 @@ def create_clients(
 def get_client(
     id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(admin_required),  
 ):
     client_found = Clients.get_client(db, id)
 
@@ -154,7 +154,7 @@ def update_clients(
 def delete_client(
     id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)  
+    user: dict = Depends(admin_required),  
 ):
     client_to_delete = db.query(Clients).filter(Clients.id == id).first()
 

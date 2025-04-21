@@ -7,9 +7,9 @@ Este endpoint permite listar os clientes cadastrados no sistema com suporte a fi
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - Os filtros por nome completo e e-mail são opcionais.
 - A resposta é paginada, com parâmetros `skip` e `limit`.
-
 """
 
 get_clients_success_response = [
@@ -70,6 +70,15 @@ get_clients_responses = {
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },
@@ -192,6 +201,7 @@ Este endpoint recupera os dados de um cliente específico com base no seu ID.
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - Caso o cliente não seja encontrado, uma mensagem de erro será retornada.
 - A resposta trará os dados completos do cliente, incluindo informações de contato e localização.
 """
@@ -231,6 +241,14 @@ get_client_responses = {
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },
@@ -360,6 +378,7 @@ Este endpoint exclui permanentemente um cliente do sistema com base no seu ID.
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - Caso o cliente com o ID fornecido não exista, será retornado um erro.
 - O retorno trará os dados do cliente que foi excluído.
 """
@@ -392,6 +411,14 @@ delete_client_responses = {
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },

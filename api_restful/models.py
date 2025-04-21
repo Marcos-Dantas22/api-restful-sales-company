@@ -50,6 +50,16 @@ class SystemUser(BaseModel):
         return user
     
     @staticmethod
+    def create_admin(db: Session, username: str, password: str):
+        hashed_pw = hash_password(password)
+        user = SystemUser(username=username, password=hashed_pw, is_admin=True)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        return user
+    
+    @staticmethod
     def get_user_by_username(db: Session, username: str):
         return db.query(SystemUser).filter(SystemUser.username == username).first()
 

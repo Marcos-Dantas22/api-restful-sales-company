@@ -3,7 +3,9 @@ from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials,
 from api_restful.auth.auth import decode_token 
 from jose import JWTError
 from fastapi import Request, HTTPException
-
+from api_restful.models import SystemUser
+from api_restful.database import get_db
+from sqlalchemy.orm import Session
 class CustomHTTPBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
         super().__init__(auto_error=False)  # Importante!
@@ -37,3 +39,18 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(oauth2_
         return {"username": username}
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+
+
+def admin_required(
+    db: Session = Depends(get_db), 
+    user: dict = Depends(get_current_user)
+):
+    system_user = db.query(SystemUser).filter(SystemUser.username == user["username"]).first()
+    
+    if not system_user or not system_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso permitido apenas para administradores."
+        )
+    
+    return user
