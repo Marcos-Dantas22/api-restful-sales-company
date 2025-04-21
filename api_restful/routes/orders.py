@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
 from api_restful.auth.dependencies import get_current_user
-from api_restful.models import Orders, Products, Clients
+from api_restful.models import Orders, Products, Clients, OrdersProducts
 from api_restful.schemas.orders import OrdersCreate, OrdersResponse, OrdersUpdate
 from api_restful.docs.orders_docs import (
     get_orders_description,
@@ -118,18 +118,7 @@ def create_orders(
 
     if not client_found: 
         raise HTTPException(status_code=400, detail="Cliente não encontrado")
-
-    for item in order.products:
-        product_id = item.product_id
-        quantity = item.quantity
-
-        product = db.query(Products).filter_by(id=product_id).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Produto não encontrado.")
-
-        if product.initial_stock < quantity:
-            raise HTTPException(status_code=404, detail=f"Estoque insuficiente para o produto '{product.description}'. Quantidade solicitada: {quantity}, disponível: {product.initial_stock}.")
-
+   
     order_created = Orders.create(
         db, 
         order,

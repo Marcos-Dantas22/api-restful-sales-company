@@ -18,12 +18,12 @@ from .database import Base
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from typing import List
-
+from fastapi import HTTPException
 Base = declarative_base()
 
 class BaseModel(Base):
     __abstract__ = True  
-    id         = Column(Integer, primary_key=True, index=True)
+    id         = Column(Integer, primary_key=True, index=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_active  = Column(Boolean, default=True)
@@ -156,6 +156,8 @@ class Products(BaseModel):
 
     images = relationship("Images", back_populates="product", cascade="all, delete-orphan")
 
+    product_orders = relationship("OrdersProducts", back_populates="product")
+
     @staticmethod
     def create(
         db: Session, 
@@ -280,56 +282,64 @@ class Images(BaseModel):
 
 
 # Tabela associativa    
-order_products = Table(
-    'order_products',
-    Base.metadata,
-    Column('order_id', Integer, ForeignKey('orders.id', ondelete="CASCADE"), primary_key=True),
-    Column('product_id', Integer, ForeignKey('products.id', ondelete="CASCADE"), primary_key=True),
-    Column('product_quantity', Integer, nullable=False)
-)
+class OrdersProducts(Base):
+    __tablename__ = 'orders_products'
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
+    order_id = Column(Integer, ForeignKey('orders.id', ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"), nullable=False)
+
+    product_description = Column(String, nullable=False)
+    product_price = Column(Numeric(10, 2), nullable=False)  
+    product_barcode = Column(String(50), nullable=False)
+    section = Column(String(100), nullable=False)
+    product_actual_stock = Column(Integer, nullable=False)
+    order_quantity = Column(Integer, nullable=False)
+
+    order = relationship("Orders", back_populates="order_products")
+    product = relationship("Products", back_populates="product_orders")
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
 class Orders(BaseModel):
     __tablename__ = 'orders'
 
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     client = relationship("Clients", back_populates="orders")
 
-    products = relationship("Products", secondary=order_products, backref="orders")
+    order_products = relationship("OrdersProducts", back_populates="order", cascade="all, delete-orphan")
+
     status = Column(Enum(OrderStatus), default=OrderStatus.created)
 
     @staticmethod
     def create(db: Session, order: OrdersCreate):
-        # Cria o pedido
         new_order = Orders(client_id=order.client_id)
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
 
         for item in order.products:
-            product_id = item.product_id
-            quantity = item.quantity
-
-            product = db.query(Products).filter_by(id=product_id).first()
-            if not product:
-                raise ValueError(f"Produto com ID {product_id} não encontrado.")
-
-            if product.initial_stock < quantity:
-                raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {quantity}, disponível: {product.stock}.")
-
-            # Adiciona na tabela associativa com quantity
-            insert_stmt = order_products.insert().values(
+            product = db.query(Products).filter_by(id=item.product_id).first()
+            
+            order_product = OrdersProducts(
                 order_id=new_order.id,
                 product_id=product.id,
-                product_quantity=quantity
+                product_description=product.description,
+                product_price=product.price,
+                product_barcode=product.barcode,
+                section=product.section,
+                product_actual_stock=product.initial_stock,
+                order_quantity=item.quantity
             )
-            db.execute(insert_stmt)
+            
+            db.add(order_product)
 
-            # Subtrai do estoque
-            product.initial_stock -= quantity
+            # Atualiza o estoque
+            product.initial_stock -= item.quantity
 
         db.commit()
-        db.refresh(new_order)
-
-        return new_order
+        return new_order 
     
     @staticmethod
     def get_orders(
@@ -383,7 +393,7 @@ class Orders(BaseModel):
     def update(db: Session, order_id: int, update_data: OrdersUpdate):
         order = db.query(Orders).filter_by(id=order_id).first()
 
-        # Atualiza o status, se fornecido
+        # Atualizar status, se fornecido
         if update_data.status:
             order.status = update_data.status
 
@@ -391,38 +401,53 @@ class Orders(BaseModel):
             for item in update_data.products:
                 product = db.query(Products).filter_by(id=item.product_id).first()
                 if not product:
-                    raise ValueError(f"Produto com ID {item.product_id} não encontrado.")
+                    raise HTTPException(status_code=404, detail=f"Produto ID {item.product_id} não encontrado")
 
                 # Verifica se o produto já está no pedido
-                existing_order_product = db.query(order_products).filter_by(
-                    order_id=order.id, product_id=item.product_id).first()
+                existing = db.query(OrdersProducts).filter_by(order_id=order.id, product_id=item.product_id).first()
 
-                if existing_order_product:
-                    # Verifica se a quantidade a ser atualizada é diferente
-                    if existing_order_product.product_quantity != item.quantity:
-                        if item.quantity > product.initial_stock:
-                            raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {item.quantity}, disponível: {product.initial_stock}.")
-                        # Atualiza a quantidade se for diferente
-                        db.execute(
-                            order_products.update().where(
-                                order_products.c.order_id == order.id,
-                                order_products.c.product_id == item.product_id
-                            ).values(product_quantity=item.quantity)
-                        )
+                if existing:
+                    diff = item.quantity - existing.order_quantity
+
+                    if diff != 0:
+                        if diff > 0:
+                            # Está tentando aumentar a quantidade
+                            if product.initial_stock < diff:
+                                raise HTTPException(
+                                    status_code=400,
+                                    detail=f"Estoque insuficiente para o produto {product.description}. Faltam {diff} unidades."
+                                )
+                            product.initial_stock -= diff
+                        else:
+                            # Está reduzindo a quantidade — devolve ao estoque
+                            product.initial_stock += abs(diff)
+
+                        existing.order_quantity = item.quantity
                 else:
-                    # Se o produto não existir no pedido, adiciona como novo
+                    # Novo produto — adicionar ao pedido
                     if item.quantity > product.initial_stock:
-                        raise ValueError(f"Estoque insuficiente para o produto '{product.name}'. Quantidade solicitada: {item.quantity}, disponível: {product.initial_stock}.")
-                    db.execute(
-                        order_products.insert().values(
-                            order_id=order.id,
-                            product_id=item.product_id,
-                            product_quantity=item.quantity
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Estoque insuficiente para o produto {product.description}. Disponível: {product.initial_stock}, Solicitado: {item.quantity}"
                         )
+
+                    new_link = OrdersProducts(
+                        order_id=order.id,
+                        product_id=product.id,
+                        product_description=product.description,
+                        product_price=product.price,
+                        product_barcode=product.barcode,
+                        section=product.section,
+                        product_actual_stock=product.initial_stock,
+                        order_quantity=item.quantity
                     )
+
+                    db.add(new_link)
+                    product.initial_stock -= item.quantity
 
         db.commit()
         db.refresh(order)
+
         return order
     
     @staticmethod

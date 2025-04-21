@@ -16,13 +16,27 @@ class OrdersCreate(BaseModel):
 class OrdersUpdate(BaseModel):
     status: Optional[OrderStatus] = None
     products: Optional[List[OrdersProductData]] = None
+    
+class OrdersProductResponse(BaseModel):
+    id: int
+    product_id: int
+    product_description: str
+    product_price: float
+    product_barcode: str
+    section: str
+    product_actual_stock: int
+    order_quantity: int
+
+    class Config:
+        orm_mode = True
+
 
 class OrdersResponse(BaseModel):
     id: int
-    client_id: int  
-    products: List[ProductsResponse]
+    client_id: int
+    order_products: List[OrdersProductResponse]
     status: OrderStatus
 
     class Config:
         orm_mode = True
-        use_enum_values = True 
+        use_enum_values = True
