@@ -1,4 +1,4 @@
-name: Run Tests on Push with SQLite in Memory
+name: Run Tests on Push with SQLite
 
 on:
   push:
@@ -20,6 +20,12 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Rodar pytest com SQLite em memória
+      - name: Rodar pytest com SQLite em arquivo temporário
+        env:
+          DATABASE_URL: sqlite:///./tests/test_temp.sqlite3
         run: |
           pytest
+
+      - name: Limpar banco SQLite temporário
+        run: |
+          rm -f ./tests/test_temp.sqlite3
