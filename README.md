@@ -30,7 +30,7 @@ Este projeto é uma implementação de uma API RESTFUL
     [x] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
     [x] Deploy da aplicação no Render
 
-[] Adições possiveis ao projeto
-    [] CI com GitHub Actions para rodar testes automaticamente
+[x] Adições possiveis ao projeto
+    [x] CI com GitHub Actions para rodar testes automaticamente
     [] Adicionar IA-->
     
