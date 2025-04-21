@@ -1,4 +1,4 @@
-name: Run Tests on Push with Docker Compose
+name: Run Tests on Push with SQLite in Memory
 
 on:
   push:
@@ -7,21 +7,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      db:
-        image: postgres:15
-        env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -35,8 +20,8 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Rodar pytest
+      - name: Rodar pytest com SQLite em memória
         env:
-          DATABASE_URL: postgresql://database_0os9_user:49kwG0vFul3xrdsxStG4dxUY43ijV1IZ@dpg-d038u93uibrs7385n6cg-a/database_0os9
+          DATABASE_URL: sqlite:///:memory:
         run: |
           pytest
