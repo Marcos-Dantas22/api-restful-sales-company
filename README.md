@@ -1,36 +1,34 @@
-# API RESTFUL
+# 🚀 API RESTful - Sales Company
 
-Este projeto é uma implementação de uma API RESTFUL
+Uma poderosa e elegante API RESTful desenvolvida com **FastAPI**, seguindo as melhores práticas de segurança, testes, versionamento e deploy com Docker. Ideal para aplicações escaláveis e modernas.
 
-## Tecnologias utilizadas
+---
 
-- **Python**
-- **FastAPI**
-- **Docker**
-- **PostgreSQL**
-- **Pytest**
-- **Sentry**
-- **SQLAlchemy ORM**
-- **Alembic migrations**
-- **python-jose JWT (JSON WEB TOKEN)**
-- **passlib cript passwords**
-- **Pydantic forma de validar formulario request**
+## 🛠️ Tecnologias Utilizadas
 
-<!-- Dividindo a tarefas em topicos -->
-<!-- [] Criar estrutura base
-    [x] Adicionar todas as rotas e criar os modelos
-    [x] Adicionar acesso ao banco de dados
-    [x] Adicionar autenticação de usuário
-    [x] Proteger todas as rotas de clientes, produtos e pedidos
-    [x] Criar documentação da API
-    [x] Adicionar validação e tratamento de erros nas rotas
-    [x] Dockerizar a aplicação
-    [x] Implementar niveis de acesso para admin e usuario regular.(deletar system_user, alterar_systemuser, criar_user_admin)
-    [x] Adicionar testes a cada rota utilizando Pytest
-    [x] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
-    [x] Deploy da aplicação no Render
+- **[Python 3.11](https://www.python.org/)**
+- **[FastAPI](https://fastapi.tiangolo.com/)** – Web framework rápido e moderno
+- **[PostgreSQL](https://www.postgresql.org/)** – Banco de dados relacional
+- **[Docker](https://www.docker.com/)** – Containerização da aplicação
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** – ORM para modelagem do banco
+- **[Alembic](https://alembic.sqlalchemy.org/)** – Migrações de banco de dados
+- **[Pytest](https://docs.pytest.org/)** – Testes automatizados
+- **[Pydantic](https://docs.pydantic.dev/)** – Validação de dados com Python
+- **[JWT - python-jose](https://github.com/mpdavis/python-jose)** – Autenticação segura via tokens
+- **[Passlib](https://passlib.readthedocs.io/)** – Criptografia de senhas
+- **[Sentry](https://sentry.io/)** – Monitoramento de erros em tempo real
 
-[x] Adições possiveis ao projeto
-    [x] CI com GitHub Actions para rodar testes automaticamente
-    [] Adicionar IA-->
-    
+---
+
+## 📦 Como rodar o projeto com Docker
+
+```bash
+# Clone o projeto
+git clone https://github.com/seu-usuario/nome-do-repositorio.git
+cd nome-do-repositorio
+
+# Crie o arquivo .env com as variáveis de ambiente necessárias
+cp .env.example .env
+
+# Suba a aplicação com Docker Compose
+docker-compose up --build
