@@ -48,7 +48,7 @@ app = FastAPI(
     redoc_url="/redoc",
     servers=[
         {"url": "http://localhost:8000/", "description": "Local Dev"},
-        {"url": "https://api.exemplo.com", "description": "Produção"}
+        {"url": "https://api-restful-sales-company.onrender.com/", "description": "Produção"}
     ],
     openapi_tags=tags_metadata  
 )
