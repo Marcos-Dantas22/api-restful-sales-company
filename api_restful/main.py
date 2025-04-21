@@ -14,10 +14,6 @@ tags_metadata = [
         "description": "Operações relacionadas ao login e token.",
     },
     {
-        "name": "Usuários",
-        "description": "Gerenciamento de usuários do sistema, incluindo criação e exclusão.",
-    },
-    {
         "name": "Clientes",
         "description": "Gerenciamento dos clientes cadastrados, incluindo criação, consulta e remoção.",
     },

@@ -139,7 +139,7 @@ def update_product(
     id: int,
     product: ProductsCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)  
+    user: dict = Depends(admin_required)  
 ):
     product_to_update = db.query(Products).filter(Products.id == id).first()
 

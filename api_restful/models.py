@@ -503,9 +503,9 @@ class Orders(BaseModel):
 
         query = (
             db.query(Orders)
-            .join(Orders.products)  
+            .join(Orders.order_products)  
             .filter(and_(*conditions))
-            .options(joinedload(Orders.products))  
+            .options(joinedload(Orders.order_products))  
         )
         return query
     

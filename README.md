@@ -25,8 +25,8 @@ Este projeto é uma implementação de uma API RESTFUL
     [x] Criar documentação da API
     [x] Adicionar validação e tratamento de erros nas rotas
     [x] Dockerizar a aplicação
-    [] Implementar niveis de acesso para admin e usuario regular.(deletar system_user, alterar_systemuser, criar_user_admin)
-    [] Adicionar testes a cada rota utilizando Pytest
+    [x] Implementar niveis de acesso para admin e usuario regular.(deletar system_user, alterar_systemuser, criar_user_admin)
+    [x] Adicionar testes a cada rota utilizando Pytest
     [] Adicionar registro de erros criticos em um sistema de monitoramento (Sentry, Grafana ou outros)
     [] Deploy da aplicação no Render
 

@@ -275,6 +275,7 @@ Este endpoint atualiza os dados de um produto específico com base no seu ID.
 
 **Regras de negócio:**
 - Apenas usuários autenticados podem acessar esta rota.
+- Apenas administradores autenticados podem acessar esta rota.
 - O produto deve existir no sistema para ser atualizado.
 - O código de barras (barcode) deve ser único. Caso já exista outro produto com o mesmo código de barras, a atualização será rejeitada.
 - Imagens so serão adicionadas ao produto se foram novas, sem remover as antigas. 
@@ -338,6 +339,14 @@ update_product_responses = {
         "content": {
             "application/json": {
                 "example": {"detail": "Token de autenticação não fornecido"}
+            }
+        }
+    },
+    403: {
+        "description": "Acesso negado. Apenas administradores podem acessar esta rota.",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Acesso permitido apenas para administradores."}
             }
         }
     },
