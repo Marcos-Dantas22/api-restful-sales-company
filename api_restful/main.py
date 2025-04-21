@@ -60,6 +60,16 @@ app.include_router(orders.router, prefix="/api/v1")
 
 app.add_middleware(SentryAsgiMiddleware)
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://api-restful-sales-company-40wp.onrender.com/"],  
+    allow_credentials=True,
+    allow_methods=["https://api-restful-sales-company-40wp.onrender.com/"],
+    allow_headers=["https://api-restful-sales-company-40wp.onrender.com/"],
+)
+
 # @app.get("/sentry-debug")
 # async def trigger_error():
 #     division_by_zero = 1 / 0
