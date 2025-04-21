@@ -3,7 +3,8 @@ from api_restful.routes import auth
 from api_restful.routes import clients
 from api_restful.routes import products
 from api_restful.routes import orders
-
+import sentry_sdk
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -27,6 +28,14 @@ tags_metadata = [
     },
 ]
 
+sentry_sdk.init(
+    dsn="https://0b77df24223fc77ee826bcf912a4c849@o4509192557494272.ingest.us.sentry.io/4509192559329280",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+    environment="production",
+)
+
 app = FastAPI(
     title="API-RESTFUL Sistema de Vendas",
     description="API responsável pelo gerenciamento de vendas, controle de estoque, registro de pedidos e administração de clientes.",
@@ -48,6 +57,12 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
+
+app.add_middleware(SentryAsgiMiddleware)
+
+# @app.get("/sentry-debug")
+# async def trigger_error():
+#     division_by_zero = 1 / 0
 
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
