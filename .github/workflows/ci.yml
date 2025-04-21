@@ -1,4 +1,4 @@
-name: Run Tests on Push with SQLite
+name: Run Tests on Push with Docker Compose
 
 on:
   push:
@@ -8,6 +8,25 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DATABASE_URL: postgresql://user:password@localhost:5432/testdb
+
     steps:
       - uses: actions/checkout@v3
 
@@ -16,17 +35,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependências
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
-
-      - name: Rodar pytest com SQLite em arquivo temporário
-        env:
-          DATABASE_URL: sqlite:///./test_temp.sqlite3
+      - name: Run tests
         run: |
           pytest
-
-      - name: Limpar banco SQLite temporário
-        run: |
-          rm -f ./test_temp.sqlite3
