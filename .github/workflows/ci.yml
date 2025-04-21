@@ -20,12 +20,13 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+
       - name: Rodar pytest com SQLite em arquivo temporário
         env:
-          DATABASE_URL: sqlite:///./tests/test_temp.sqlite3
+          DATABASE_URL: sqlite:///./test_temp.sqlite3
         run: |
           pytest
 
       - name: Limpar banco SQLite temporário
         run: |
-          rm -f ./tests/test_temp.sqlite3
+          rm -f ./test_temp.sqlite3
