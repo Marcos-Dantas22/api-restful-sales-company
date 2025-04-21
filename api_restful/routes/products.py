@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from api_restful.database import get_db
 from api_restful.auth.dependencies import get_current_user
-from api_restful.models import Products
+from api_restful.models import Products, SystemUser, ProductHistory
 from api_restful.schemas.products import ProductsCreate, ProductsResponse
 from api_restful.docs.products_docs import (
     get_products_description,
@@ -92,8 +92,12 @@ def create_products(
     if existing_barcode:
         raise HTTPException(status_code=400, detail="Codigo de barra já esta sendo utilizado")
     
+    
+    system_user = db.query(SystemUser).filter(SystemUser.username == user['username']).first()
+
     product_created = Products.create(
         db, 
+        system_user.id,
         product,
     )
 
@@ -145,10 +149,13 @@ def update_product(
     
     if existing_barcode:
         raise HTTPException(status_code=400, detail="Codigo de barra já esta sendo utilizado")
-   
+    
+    system_user = db.query(SystemUser).filter(SystemUser.username == user['username']).first()
+
     product_to_update = Products.update(
         db, 
         id,
+        system_user.id,
         product,
     )
     
@@ -172,10 +179,25 @@ def delete_product(
 
     if not product_to_delete:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
-   
+    
+    system_user = db.query(SystemUser).filter(SystemUser.username == user['username']).first()
+
     product_to_delete = Products.delete(
         db, 
+        system_user.id,
         id,
     )
     
     return product_to_delete
+
+@router.get(
+    "/products/{product_id}/history",
+    status_code=status.HTTP_200_OK,
+    summary="Historico de produto",
+    # description=delete_product_description,
+    # responses=delete_product_responses,
+    tags=["Produtos"],
+)
+def get_product_history(product_id: int, db: Session = Depends(get_db)):
+    history = db.query(ProductHistory).filter(ProductHistory.product_id == product_id).all()
+    return history

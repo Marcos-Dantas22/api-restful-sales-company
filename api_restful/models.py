@@ -4,6 +4,8 @@ from sqlalchemy import (
     Date, DateTime, Boolean, 
     ForeignKey, Numeric, Text, Table, Enum
 )
+import decimal
+import json
 from api_restful.utils.enums import GenderStatus, OrderStatus
 from api_restful.schemas.clients import ClientCreate, ClientResponse
 from api_restful.schemas.products import ProductsCreate
@@ -33,6 +35,9 @@ class SystemUser(BaseModel):
     username = Column(String, unique=True)
     password = Column(String)
     is_admin = Column(Boolean, default=False)
+
+    # Relacionamento com o histórico de mudanças nos produtos
+    product_histories = relationship('ProductHistory', back_populates='user')  # Relacionamento com 'ProductHistory'
 
     @staticmethod
     def create(db: Session, username: str, password: str):
@@ -158,9 +163,12 @@ class Products(BaseModel):
 
     product_orders = relationship("OrdersProducts", back_populates="product")
 
+    history = relationship('ProductHistory', back_populates='product')
+
     @staticmethod
     def create(
         db: Session, 
+        user_id: int,
         product: ProductsCreate, 
     ):
         product_created = Products(
@@ -175,6 +183,26 @@ class Products(BaseModel):
         db.add(product_created)
         db.commit()
         db.refresh(product_created)
+
+        created_product_info =  {
+            "id": product_created.id,
+            "description": product_created.description,
+            "price": product_created.price,
+            "section": product_created.section,
+            "barcode": product_created.barcode,
+            "initial_stock": product_created.initial_stock,
+            "expiration_date": product_created.expiration_date,
+        }
+        # Convertendo o dicionário para uma string JSON
+        created_product_info_json = json.dumps(created_product_info, default=str) 
+
+        ProductHistory.create_product_history(
+            db, 
+            product_created.id, 
+            user_id, 
+            "created", 
+            created_product_info_json
+        )
 
         if product.images: 
             for img in product.images:
@@ -230,9 +258,20 @@ class Products(BaseModel):
     def update(
         db: Session, 
         id: int,
+        user_id: int,
         product: ProductsCreate, 
     ):
         product_to_update = db.query(Products).filter(Products.id == id).first()
+
+        # Obter os valores antigos
+        old_values = {
+            "description": product_to_update.description,
+            "price": product_to_update.price,
+            "section": product_to_update.section,
+            "barcode": product_to_update.barcode,
+            "initial_stock": product_to_update.initial_stock,
+            "expiration_date": product_to_update.expiration_date,
+        }
 
         # Atualiza os campos básicos do produto
         product_to_update.description = product.description
@@ -241,6 +280,33 @@ class Products(BaseModel):
         product_to_update.barcode = product.barcode
         product_to_update.initial_stock = product.initial_stock
         product_to_update.expiration_date = product.expiration_date
+
+        # Identificar os campos modificados e construir a estrutura com os valores antigos e novos
+        changed_fields = {}
+        for field, old_value in old_values.items():
+            new_value = getattr(product_to_update, field)
+
+            if isinstance(old_value, decimal.Decimal):
+                old_value = float(old_value)
+
+            if old_value != new_value:
+                changed_fields[field] = {
+                    "old_value": old_value,
+                    "new_value": new_value
+                }
+
+        # Se houve mudanças, registrar no histórico
+        if changed_fields:
+            # Converte o dicionário de mudanças para uma string JSON
+            changed_fields_str = str(changed_fields) 
+            # Registre a mudança no histórico
+            ProductHistory.create_product_history(
+                db, 
+                product_to_update.id, 
+                user_id, 
+                "update", 
+                changed_fields_str
+            )
 
         db.commit()
         db.refresh(product_to_update)
@@ -264,8 +330,30 @@ class Products(BaseModel):
         return product_to_update
     
     @staticmethod
-    def delete(db: Session, id: int):
+    def delete(db: Session, user_id: int, id: int):
         product_to_delete = db.query(Products).filter(Products.id == id).first()
+
+         # Registrando o histórico antes de apagar o produto
+        deleted_product_info = {
+            'id': product_to_delete.id,
+            "description": product_to_delete.description,
+            "price": product_to_delete.price,
+            "section": product_to_delete.section,
+            "barcode": product_to_delete.barcode,
+            "initial_stock": product_to_delete.initial_stock,
+            "expiration_date": product_to_delete.expiration_date,
+        }
+
+        # Convertendo o dicionário para uma string JSON
+        deleted_product_info_json = json.dumps(deleted_product_info, default=str) 
+
+        ProductHistory.create_product_history(
+            db, 
+            None, 
+            user_id, 
+            "delete", 
+            deleted_product_info_json
+        )
 
         db.delete(product_to_delete)
         db.commit()
@@ -281,13 +369,40 @@ class Images(BaseModel):
     product = relationship("Products", back_populates="images")
 
 
+class ProductHistory(Base):
+    __tablename__ = 'product_history'
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=True)  
+    user_id = Column(Integer, ForeignKey('system_users.id'), nullable=False) 
+
+    action = Column(String, nullable=False) 
+    changed_fields = Column(String) 
+    timestamp = Column(DateTime, server_default=func.now(), nullable=False) 
+
+   # Relacionamento com o produto e o usuário
+    product = relationship('Products', back_populates='history')
+    user = relationship('SystemUser', back_populates='product_histories')  # Agora está corretamente vinculado
+
+    def create_product_history(db: Session, product_id: int, user_id: int, action: str, changed_fields: str):
+        product_history = ProductHistory(
+            product_id=product_id,
+            user_id=user_id,
+            action=action,
+            changed_fields=changed_fields
+        )
+        db.add(product_history)
+        db.commit()
+        db.refresh(product_history)
+        return product_history
+
 # Tabela associativa    
 class OrdersProducts(Base):
     __tablename__ = 'orders_products'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
-    order_id = Column(Integer, ForeignKey('orders.id', ondelete="CASCADE"), nullable=False)
-    product_id = Column(Integer, ForeignKey('products.id', ondelete="CASCADE"), nullable=False)
+    order_id = Column(Integer, ForeignKey('orders.id', ondelete="SET NULL"), nullable=True)
+    product_id = Column(Integer, ForeignKey('products.id', ondelete="SET NULL"), nullable=True)
 
     product_description = Column(String, nullable=False)
     product_price = Column(Numeric(10, 2), nullable=False)  
