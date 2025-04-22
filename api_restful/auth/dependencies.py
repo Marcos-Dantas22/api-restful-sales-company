@@ -8,7 +8,7 @@ from api_restful.database import get_db
 from sqlalchemy.orm import Session
 class CustomHTTPBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
-        super().__init__(auto_error=False)  # Importante!
+        super().__init__(auto_error=False) 
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
         credentials = await super().__call__(request)

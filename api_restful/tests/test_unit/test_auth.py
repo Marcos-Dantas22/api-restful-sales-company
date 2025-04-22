@@ -1,6 +1,4 @@
 # tests/api/api_v1/test_auth.py
-
-import pytest
 from fastapi import status
 
 def test_register_user_success(client):

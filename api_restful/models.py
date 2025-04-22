@@ -36,8 +36,7 @@ class SystemUser(BaseModel):
     password = Column(String)
     is_admin = Column(Boolean, default=False)
 
-    # Relacionamento com o histórico de mudanças nos produtos
-    product_histories = relationship('ProductHistory', back_populates='user')  # Relacionamento com 'ProductHistory'
+    product_histories = relationship('ProductHistory', back_populates='user') 
 
     @staticmethod
     def create(db: Session, username: str, password: str):
@@ -203,7 +202,6 @@ class Products(BaseModel):
             "initial_stock": product_created.initial_stock,
             "expiration_date": product_created.expiration_date,
         }
-        # Convertendo o dicionário para uma string JSON
         created_product_info_json = json.dumps(created_product_info, default=str) 
 
         ProductHistory.create_product_history(
@@ -273,7 +271,6 @@ class Products(BaseModel):
     ):
         product_to_update = db.query(Products).filter(Products.id == id).first()
 
-        # Obter os valores antigos
         old_values = {
             "description": product_to_update.description,
             "price": product_to_update.price,
@@ -283,7 +280,6 @@ class Products(BaseModel):
             "expiration_date": product_to_update.expiration_date,
         }
 
-        # Atualiza os campos básicos do produto
         product_to_update.description = product.description
         product_to_update.price = product.price
         product_to_update.section = product.section
@@ -291,7 +287,6 @@ class Products(BaseModel):
         product_to_update.initial_stock = product.initial_stock
         product_to_update.expiration_date = product.expiration_date
 
-        # Identificar os campos modificados e construir a estrutura com os valores antigos e novos
         changed_fields = {}
         for field, old_value in old_values.items():
             new_value = getattr(product_to_update, field)
@@ -305,11 +300,8 @@ class Products(BaseModel):
                     "new_value": new_value
                 }
 
-        # Se houve mudanças, registrar no histórico
         if changed_fields:
-            # Converte o dicionário de mudanças para uma string JSON
             changed_fields_str = str(changed_fields) 
-            # Registre a mudança no histórico
             ProductHistory.create_product_history(
                 db, 
                 product_to_update.id, 
@@ -321,9 +313,7 @@ class Products(BaseModel):
         db.commit()
         db.refresh(product_to_update)
        
-        # Adiciona imagens novas (sem remover as antigas)
         if product.images:
-            # Coleta base64 das imagens já salvas para esse produto
             existing_images = db.query(Images.base64).filter(Images.product_id == id).all()
             existing_base64_list = [img.base64 for img in existing_images]
 
@@ -343,7 +333,6 @@ class Products(BaseModel):
     def delete(db: Session, user_id: int, id: int):
         product_to_delete = db.query(Products).filter(Products.id == id).first()
 
-         # Registrando o histórico antes de apagar o produto
         deleted_product_info = {
             'id': product_to_delete.id,
             "description": product_to_delete.description,
@@ -354,7 +343,6 @@ class Products(BaseModel):
             "expiration_date": product_to_delete.expiration_date,
         }
 
-        # Convertendo o dicionário para uma string JSON
         deleted_product_info_json = json.dumps(deleted_product_info, default=str) 
 
         ProductHistory.create_product_history(
@@ -389,10 +377,10 @@ class ProductHistory(Base):
     action = Column(String, nullable=False) 
     changed_fields = Column(String) 
     timestamp = Column(DateTime, server_default=func.now(), nullable=False) 
+    
 
-   # Relacionamento com o produto e o usuário
     product = relationship('Products', back_populates='history')
-    user = relationship('SystemUser', back_populates='product_histories')  # Agora está corretamente vinculado
+    user = relationship('SystemUser', back_populates='product_histories') 
 
     def create_product_history(db: Session, product_id: int, user_id: int, action: str, changed_fields: str):
         product_history = ProductHistory(
@@ -406,7 +394,6 @@ class ProductHistory(Base):
         db.refresh(product_history)
         return product_history
 
-# Tabela associativa    
 class OrdersProducts(Base):
     __tablename__ = 'orders_products'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -460,7 +447,6 @@ class Orders(BaseModel):
             
             db.add(order_product)
 
-            # Atualiza o estoque
             product.initial_stock -= item.quantity
 
         db.commit()
@@ -518,7 +504,6 @@ class Orders(BaseModel):
     def update(db: Session, order_id: int, update_data: OrdersUpdate):
         order = db.query(Orders).filter_by(id=order_id).first()
 
-        # Atualizar status, se fornecido
         if update_data.status:
             order.status = update_data.status
 
@@ -528,7 +513,6 @@ class Orders(BaseModel):
                 if not product:
                     raise HTTPException(status_code=404, detail=f"Produto ID {item.product_id} não encontrado")
 
-                # Verifica se o produto já está no pedido
                 existing = db.query(OrdersProducts).filter_by(order_id=order.id, product_id=item.product_id).first()
 
                 if existing:
@@ -536,7 +520,6 @@ class Orders(BaseModel):
 
                     if diff != 0:
                         if diff > 0:
-                            # Está tentando aumentar a quantidade
                             if product.initial_stock < diff:
                                 raise HTTPException(
                                     status_code=400,
@@ -544,12 +527,10 @@ class Orders(BaseModel):
                                 )
                             product.initial_stock -= diff
                         else:
-                            # Está reduzindo a quantidade — devolve ao estoque
                             product.initial_stock += abs(diff)
 
                         existing.order_quantity = item.quantity
                 else:
-                    # Novo produto — adicionar ao pedido
                     if item.quantity > product.initial_stock:
                         raise HTTPException(
                             status_code=400,

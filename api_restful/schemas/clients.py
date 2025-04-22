@@ -6,7 +6,7 @@ from api_restful.utils.enums import GenderStatus
 # Função para formatar o telefone
 def format_phone(phone: Optional[str]) -> Optional[str]:
     if phone:
-        phone = ''.join(filter(str.isdigit, phone))  # Remove qualquer caractere não numérico
+        phone = ''.join(filter(str.isdigit, phone)) 
         if len(phone) == 11:
             return f"({phone[:2]}) {phone[2:7]}-{phone[7:]}"
         else:
@@ -15,7 +15,7 @@ def format_phone(phone: Optional[str]) -> Optional[str]:
 
 def format_cpf(cpf: Optional[str]) -> Optional[str]:
     if cpf:
-        cpf = ''.join(filter(str.isdigit, cpf))  # Remove qualquer caractere não numérico
+        cpf = ''.join(filter(str.isdigit, cpf)) 
         if len(cpf) == 11:
             return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
         else:
@@ -79,15 +79,14 @@ class ClientResponse(BaseModel):
             values.city = "Não informado"
         if values.state is None:
             values.state = "Não informado"
-        if values.gender is None:
-            values.gender = "Não informado"
+
         else:
             gender_translation = {
                 "male": "Masculino",
                 "female": "Feminino",
                 "other": "Outro"
             }
-            values.gender = gender_translation[values.gender.value]
+            values.gender = gender_translation[values.gender]
         
         return values
     

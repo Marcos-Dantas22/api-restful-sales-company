@@ -34,7 +34,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
-      - test_db
+      # - test_db
     environment:
       - DATABASE_URL=${DATABASE_URL}
 

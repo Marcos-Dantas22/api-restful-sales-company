@@ -2,19 +2,22 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from api_restful.models import Base  
-import os
 from fastapi.testclient import TestClient
 from api_restful.main import app
 from api_restful.auth.dependencies import get_db
-from api_restful.tests.factories.system_user import SystemUserFactory 
 from dotenv import load_dotenv
 import os
 from api_restful.auth.auth import create_access_token
+from api_restful.tests.factories.system_user import SystemUserFactory
+from api_restful.tests.factories.clients import ClientsFactory
+from api_restful.tests.factories.products import ProductsFactory, ProductHistoryFactory
+from api_restful.tests.factories.orders import OrdersFactory, OrdersProductsFactory
+
 
 load_dotenv()
 
 # Usar a variável de ambiente DATABASE_URL, se estiver configurada
-TEST_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
 # Criar o engine com a URL configurada
 engine = create_engine(
@@ -39,6 +42,11 @@ def db_session(test_db_engine):
     
     # Injeta a sessão nas factories
     SystemUserFactory._meta.sqlalchemy_session = session
+    ClientsFactory._meta.sqlalchemy_session = session
+    ProductsFactory._meta.sqlalchemy_session = session
+    ProductHistoryFactory._meta.sqlalchemy_session = session
+    OrdersFactory._meta.sqlalchemy_session = session
+    OrdersProductsFactory._meta.sqlalchemy_session = session
     
     yield session
 
@@ -54,7 +62,6 @@ def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
 
-# Token se quiser testar endpoints protegidos
 @pytest.fixture
 def token_pair(client, normal_user):
     response = client.post("api/v1/auth/login", json={

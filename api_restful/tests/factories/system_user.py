@@ -15,7 +15,6 @@ class SystemUserFactory(factory.alchemy.SQLAlchemyModelFactory):
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
-        # Handle the password argument before creating the user
         if "password" in kwargs:
             kwargs["password"] = hash_password(kwargs.pop("password"))
         return super()._create(model_class, *args, **kwargs)

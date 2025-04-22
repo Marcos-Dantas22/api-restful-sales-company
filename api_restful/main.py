@@ -30,8 +30,6 @@ tags_metadata = [
 
 sentry_sdk.init(
     dsn="https://0b77df24223fc77ee826bcf912a4c849@o4509192557494272.ingest.us.sentry.io/4509192559329280",
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
     send_default_pii=True,
     environment="production",
 )
@@ -70,10 +68,6 @@ app.add_middleware(
     allow_headers=["https://api-restful-sales-company-40wp.onrender.com/"],
 )
 
-# @app.get("/sentry-debug")
-# async def trigger_error():
-#     division_by_zero = 1 / 0
-
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = []
@@ -95,7 +89,6 @@ async def custom_validation_exception_handler(request: Request, exc: RequestVali
     )
 
 def traduction(msg: str) -> str:
-    # Remove o prefixo automático do Pydantic
     if msg.startswith("Value error, "):
         msg = msg.replace("Value error, ", "", 1)
 
