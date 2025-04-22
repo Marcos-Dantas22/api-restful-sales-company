@@ -4,6 +4,16 @@ Uma poderosa e elegante API RESTful desenvolvida com **FastAPI**, seguindo as me
 
 ---
 
+## 🌐 Documentação
+
+Acesse a documentação interativa da API no Swagger:
+
+🔗 **[https://api-restful-sales-company.onrender.com/docs](https://api-restful-sales-company.onrender.com/docs)**
+
+> ⚠️ *O projeto está hospedado na Render com plano gratuito (Free Tier), o que pode causar uma demora inicial de alguns segundos ao acessar após período de inatividade (cold start).*
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 - **[Python 3.11](https://www.python.org/)**
@@ -24,11 +34,8 @@ Uma poderosa e elegante API RESTful desenvolvida com **FastAPI**, seguindo as me
 
 ```bash
 # Clone o projeto
-git clone https://github.com/seu-usuario/nome-do-repositorio.git
-cd nome-do-repositorio
+git clone https://github.com/Marcos-Dantas22/api-restful-sales-company.git
+cd api-restful-sales-company
 
-# Crie o arquivo .env com as variáveis de ambiente necessárias
-cp .env.example .env
-
-# Suba a aplicação com Docker Compose
-docker-compose up --build
+# Gere o arquivo .env com as variáveis de ambiente
+./setup.sh  # ou execute manualmente conforme abaixo
