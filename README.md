@@ -40,6 +40,9 @@ cd api-restful-sales-company
 # Gere o arquivo .env com as variáveis de ambiente
 ./setup.sh  # ou execute manualmente conforme abaixo
 
+# Usuario admin disponivel
+username: admin,
+password: admin123
 ```
 
 ## Informações sobre o Desenvolvimento do Projeto
